@@ -1,4 +1,5 @@
 port = 3000
+readiness_path = "/health"
 
 [env.common]
 PORT = "3000"
