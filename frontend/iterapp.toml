@@ -1,7 +1,7 @@
 port = 3000
 
 [env.common]
-PORT = 3000
+PORT = "3000"
 
 [env.test]
 API_URL = "https://backend.hops-realworld.test.iterate.no/api"
