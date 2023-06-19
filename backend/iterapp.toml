@@ -1,0 +1,7 @@
+port = 8080
+readiness_path = "/health"
+
+[env.common]
+HMAC_KEY = "/fJJgIkPorViFyq1I345XVP/lFgl1jGvLzm2VGJIkIWb/3vYq+6PznOMCXeOOedw"
+
+[postgres]

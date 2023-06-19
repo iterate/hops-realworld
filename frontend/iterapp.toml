@@ -1,0 +1,10 @@
+port = 3000
+
+[env.common]
+PORT = 3000
+
+[env.test]
+API_URL = "https://backend.hops-realworld.test.iterate.no/api"
+
+[env.prod]
+API_URL = "https://backend.hops-realworld.app.iterate.no/api"
