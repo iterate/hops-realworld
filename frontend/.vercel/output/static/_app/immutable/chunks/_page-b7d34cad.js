@@ -1,0 +1,1 @@
+import{R as r}from"./control-f5b05b5f.js";function t(o,e){return new r(o,e)}async function n({parent:o}){const{user:e}=await o();throw t(307,e?`/profile/@${e.username}`:"/login")}const i=Object.freeze(Object.defineProperty({__proto__:null,load:n},Symbol.toStringTag,{value:"Module"}));export{i as _,n as l};
