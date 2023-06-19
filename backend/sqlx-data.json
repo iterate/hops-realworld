@@ -1,0 +1,1118 @@
+{
+  "db": "PostgreSQL",
+  "15496edb22ae3fbf890f9b188114cf24769a86139b47603b21c2a38a37c9b498": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "insert into \"user\" (username, email, password_hash) values ($1, $2, $3) returning user_id"
+  },
+  "1ec948d2432697c1f950de769fc8cff8037bc22cbbbab336ada0893e1d70cbe1": {
+    "describe": {
+      "columns": [
+        {
+          "name": "article_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            with selected_article as (\n                select article_id from article where slug = $1\n            ),\n            inserted_favorite as (\n                insert into article_favorite(article_id, user_id)\n                select article_id, $2\n                from selected_article\n                -- if the article is already favorited\n                on conflict do nothing\n            )\n            select article_id from selected_article\n        "
+  },
+  "3396850c0243f2eb4be64f9edc4e625bd576f4c77dc3f45d8603ff0c7ea664b0": {
+    "describe": {
+      "columns": [
+        {
+          "name": "article_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            with selected_article as (\n                select article_id from article where slug = $1\n            ),\n            deleted_favorite as (\n                delete from article_favorite\n                where article_id = (select article_id from selected_article)\n                and user_id = $2\n            )\n            select article_id from selected_article\n        "
+  },
+  "3dc2f1fd13bd5a27ddc6c574f0b6864c51249295eb99799ebac36c99b14e321b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "email",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "username",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "bio",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "image",
+          "ordinal": 3,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            update \"user\"\n            set email = coalesce($1, \"user\".email),\n                username = coalesce($2, \"user\".username),\n                password_hash = coalesce($3, \"user\".password_hash),\n                bio = coalesce($4, \"user\".bio),\n                image = coalesce($5, \"user\".image)\n            where user_id = $6\n            returning email, username, bio, image\n        "
+  },
+  "425c908baccc818e9abed652b6251aecd692e4b72070516aff87995bdf328d73": {
+    "describe": {
+      "columns": [
+        {
+          "name": "slug",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "body",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "tag_list",
+          "ordinal": 4,
+          "type_info": "TextArray"
+        },
+        {
+          "name": "created_at: Timestamptz",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "updated_at: Timestamptz",
+          "ordinal": 6,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "favorited!",
+          "ordinal": 7,
+          "type_info": "Bool"
+        },
+        {
+          "name": "favorites_count!",
+          "ordinal": 8,
+          "type_info": "Int8"
+        },
+        {
+          "name": "author_username",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_bio",
+          "ordinal": 10,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_image",
+          "ordinal": 11,
+          "type_info": "Text"
+        },
+        {
+          "name": "following_author!",
+          "ordinal": 12,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        null,
+        null,
+        false,
+        false,
+        true,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            select\n                slug,\n                title,\n                description,\n                body,\n                tag_list,\n                article.created_at \"created_at: Timestamptz\",\n                article.updated_at \"updated_at: Timestamptz\",\n                exists(select 1 from article_favorite where user_id = $1) \"favorited!\",\n                coalesce(\n                    -- `count(*)` returns `NULL` if the query returned zero columns\n                    -- not exactly a fan of that design choice but whatever\n                    (select count(*) from article_favorite fav where fav.article_id = article.article_id),\n                    0\n                ) \"favorites_count!\",\n                author.username author_username,\n                author.bio author_bio,\n                author.image author_image,\n                exists(select 1 from follow where followed_user_id = author.user_id and following_user_id = $1) \"following_author!\"\n            from article\n            inner join \"user\" author using (user_id)\n            where article_id = $2\n        "
+  },
+  "451959cee173c4765280a8a002a6f69ec8fd59c1e84165d429482596376353d4": {
+    "describe": {
+      "columns": [
+        {
+          "name": "email",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "username",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "bio",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "image",
+          "ordinal": 3,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid"
+        ]
+      }
+    },
+    "query": "select email, username, bio, image from \"user\" where user_id = $1"
+  },
+  "4c4b974e7cb4801b6df02c01f16610aabce95bd7c902aa794b5ac9c981d0cbe6": {
+    "describe": {
+      "columns": [
+        {
+          "name": "article_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "user_id",
+          "ordinal": 1,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "select article_id, user_id from article where slug = $1 for update"
+  },
+  "5153cf2a633a2447676c1c5aa31ad7a0a9ca006d27087227d5a2b3fb664f58d3": {
+    "describe": {
+      "columns": [
+        {
+          "name": "tag!",
+          "ordinal": 0,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        null
+      ],
+      "parameters": {
+        "Left": []
+      }
+    },
+    "query": "\n            select distinct tag \"tag!\"\n            from article, unnest (article.tag_list) tags(tag)\n            order by tag\n        "
+  },
+  "6de1ca09b3b33c607478ea985271d32a6dc5927f7465bc3552df1d8f57ecd137": {
+    "describe": {
+      "columns": [
+        {
+          "name": "comment_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "body",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_username",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_bio",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_image",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "following_author!",
+          "ordinal": 7,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            select\n                comment_id,\n                comment.created_at,\n                comment.updated_at,\n                comment.body,\n                author.username author_username,\n                author.bio author_bio,\n                author.image author_image,\n                exists(select 1 from follow where followed_user_id = author.user_id and following_user_id = $1) \"following_author!\"\n            from article_comment comment\n            inner join \"user\" author using (user_id)\n            where article_id = $2\n            order by created_at\n        "
+  },
+  "75566a2e676246dc957601cc358ccc6b8e591094c959099e0b7cad575e2a013d": {
+    "describe": {
+      "columns": [
+        {
+          "name": "username",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "bio",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "image",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "following!",
+          "ordinal": 3,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        true,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            select\n                username,\n                bio,\n                image,\n                exists(\n                    select 1 from follow \n                    where followed_user_id = \"user\".user_id and following_user_id = $2\n                ) \"following!\" -- This tells SQLx that this column will never be null\n            from \"user\"\n            where username = $1\n        "
+  },
+  "76f0caee6879f31d122e26cbd3c7772b640780c498eab1eb6d896ab630f5855c": {
+    "describe": {
+      "columns": [
+        {
+          "name": "slug",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "body",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "tag_list",
+          "ordinal": 4,
+          "type_info": "TextArray"
+        },
+        {
+          "name": "created_at: Timestamptz",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "updated_at: Timestamptz",
+          "ordinal": 6,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "favorited!",
+          "ordinal": 7,
+          "type_info": "Bool"
+        },
+        {
+          "name": "favorites_count!",
+          "ordinal": 8,
+          "type_info": "Int8"
+        },
+        {
+          "name": "author_username",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_bio",
+          "ordinal": 10,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_image",
+          "ordinal": 11,
+          "type_info": "Text"
+        },
+        {
+          "name": "following_author!",
+          "ordinal": 12,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        null,
+        null,
+        false,
+        false,
+        true,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Int8",
+          "Int8"
+        ]
+      }
+    },
+    "query": "\n            select\n                slug,\n                title,\n                description,\n                body,\n                tag_list,\n                article.created_at \"created_at: Timestamptz\",\n                article.updated_at \"updated_at: Timestamptz\",\n                exists(select 1 from article_favorite where user_id = $1) \"favorited!\",\n                coalesce(\n                    (select count(*) from article_favorite fav where fav.article_id = article.article_id),\n                    0\n                ) \"favorites_count!\",\n                author.username author_username,\n                author.bio author_bio,\n                author.image author_image,\n                -- we wouldn't be returning this otherwise\n                true \"following_author!\"\n            from follow\n            inner join article on followed_user_id = article.user_id\n            inner join \"user\" author using (user_id)\n            where following_user_id = $1\n            limit $2\n            offset $3\n        "
+  },
+  "77dce8942510474abfbc4d454648362485293057bc6bae1d498b66bab90bf584": {
+    "describe": {
+      "columns": [
+        {
+          "name": "article_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        }
+      ],
+      "nullable": [
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "select article_id from article where slug = $1"
+  },
+  "7b4ee5a650d2b7c820394777c3854652e40e4f7befe639e3d17315cf557b24be": {
+    "describe": {
+      "columns": [
+        {
+          "name": "slug",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "body",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "tag_list",
+          "ordinal": 4,
+          "type_info": "TextArray"
+        },
+        {
+          "name": "created_at: Timestamptz",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "updated_at: Timestamptz",
+          "ordinal": 6,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "favorited!",
+          "ordinal": 7,
+          "type_info": "Bool"
+        },
+        {
+          "name": "favorites_count!",
+          "ordinal": 8,
+          "type_info": "Int8"
+        },
+        {
+          "name": "author_username",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_bio",
+          "ordinal": 10,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_image",
+          "ordinal": 11,
+          "type_info": "Text"
+        },
+        {
+          "name": "following_author!",
+          "ordinal": 12,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        null,
+        null,
+        false,
+        false,
+        true,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            select\n                slug,\n                title,\n                description,\n                body,\n                tag_list,\n                article.created_at \"created_at: Timestamptz\",\n                article.updated_at \"updated_at: Timestamptz\",\n                exists(select 1 from article_favorite where user_id = $1) \"favorited!\",\n                coalesce(\n                    -- `count(*)` returns `NULL` if the query returned zero columns\n                    -- not exactly a fan of that design choice but whatever\n                    (select count(*) from article_favorite fav where fav.article_id = article.article_id),\n                    0\n                ) \"favorites_count!\",\n                author.username author_username,\n                author.bio author_bio,\n                author.image author_image,\n                exists(select 1 from follow where followed_user_id = author.user_id and following_user_id = $1) \"following_author!\"\n            from article\n            inner join \"user\" author using (user_id)\n            where slug = $2\n        "
+  },
+  "7baf689eb3b33c427a9532a7c0ba3ba032251b09b2557a6f0d919d0bb170744a": {
+    "describe": {
+      "columns": [
+        {
+          "name": "slug",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "body",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "tag_list",
+          "ordinal": 4,
+          "type_info": "TextArray"
+        },
+        {
+          "name": "created_at: Timestamptz",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "updated_at: Timestamptz",
+          "ordinal": 6,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "favorited!",
+          "ordinal": 7,
+          "type_info": "Bool"
+        },
+        {
+          "name": "favorites_count!",
+          "ordinal": 8,
+          "type_info": "Int8"
+        },
+        {
+          "name": "author_username",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_bio",
+          "ordinal": 10,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_image",
+          "ordinal": 11,
+          "type_info": "Text"
+        },
+        {
+          "name": "following_author!",
+          "ordinal": 12,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        null,
+        null,
+        false,
+        false,
+        true,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Text",
+          "Text",
+          "Int8",
+          "Int8"
+        ]
+      }
+    },
+    "query": "\n            select\n                slug,\n                title,\n                description,\n                body,\n                tag_list,\n                article.created_at \"created_at: Timestamptz\",\n                article.updated_at \"updated_at: Timestamptz\",\n                exists(select 1 from article_favorite where user_id = $1) \"favorited!\",\n                coalesce(\n                    -- `count(*)` returns `NULL` if the query returned zero columns\n                    -- not exactly a fan of that design choice but whatever\n                    (select count(*) from article_favorite fav where fav.article_id = article.article_id),\n                    0\n                ) \"favorites_count!\",\n                author.username author_username,\n                author.bio author_bio,\n                author.image author_image,\n                exists(select 1 from follow where followed_user_id = author.user_id and following_user_id = $1) \"following_author!\"\n            from article\n            inner join \"user\" author using (user_id)\n            -- the current way to do conditional filtering in SQLx\n            where (\n                -- check if `query.tag` is null or contains the given tag\n                -- PostgresSQL doesn't have an \"array contains element\" operator\n                -- so instead we check if the tag_list contains an array of just the given tag\n                $2::text is null or tag_list @> array[$2]\n            )\n              and\n            (\n                $3::text is null or author.username = $3\n            )\n              and\n            (\n                $4::text is null or exists(\n                    select 1\n                    from \"user\"\n                    inner join article_favorite af using (user_id)\n                    where username = $4\n                )\n            )\n            order by article.created_at desc\n            limit $5\n            offset $6\n        "
+  },
+  "95ee441f59740cf819778a3ce2a43f66dfcbf33d9e9a8a0d2235154803953450": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "email",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "username",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "bio",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "image",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "password_hash",
+          "ordinal": 5,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        true,
+        false
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            select user_id, email, username, bio, image, password_hash \n            from \"user\" where email = $1\n        "
+  },
+  "a3cb5f6dbe9d2c9a52a9ce0b7febaae21450fa47da8d9f55398c5240294105c7": {
+    "describe": {
+      "columns": [
+        {
+          "name": "existed!",
+          "ordinal": 0,
+          "type_info": "Bool"
+        },
+        {
+          "name": "deleted!",
+          "ordinal": 1,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        null,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Int8",
+          "Text",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            with deleted_comment as (\n                delete from article_comment\n                where \n                    comment_id = $1\n                    and article_id in (select article_id from article where slug = $2)\n                    and user_id = $3\n                returning 1 \n            )\n            select \n                exists(\n                    select 1 from article_comment\n                    inner join article using (article_id)\n                    where comment_id = $1 and slug = $2\n                ) \"existed!\",\n                exists(select 1 from deleted_comment) \"deleted!\"\n        "
+  },
+  "b473b8ff9d84a0daef69cf679deaf27e1c584ee6e8fb12ac9e6b89a95e5a61c3": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "insert into follow(following_user_id, followed_user_id) values ($1, $2) on conflict do nothing"
+  },
+  "bb17e5051425162a4310778a1f846112f5228c31aa594200afc4f09dd9c3545b": {
+    "describe": {
+      "columns": [
+        {
+          "name": "comment_id",
+          "ordinal": 0,
+          "type_info": "Int8"
+        },
+        {
+          "name": "created_at",
+          "ordinal": 1,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "updated_at",
+          "ordinal": 2,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "body",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_username",
+          "ordinal": 4,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_bio",
+          "ordinal": 5,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_image",
+          "ordinal": 6,
+          "type_info": "Text"
+        },
+        {
+          "name": "following_author!",
+          "ordinal": 7,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        true,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Text"
+        ]
+      }
+    },
+    "query": "\n            with inserted_comment as (\n                insert into article_comment(article_id, user_id, body)\n                select article_id, $1, $2\n                from article\n                where slug = $3\n                returning comment_id, created_at, updated_at, body\n            )\n            select\n                comment_id,\n                comment.created_at,\n                comment.updated_at,\n                body,\n                author.username author_username,\n                author.bio author_bio,\n                author.image author_image,\n                false \"following_author!\"\n            from inserted_comment comment\n            inner join \"user\" author on user_id = $1\n        "
+  },
+  "be21ab3ab1274146fdd7d754ce47d6fdbbaf5366c5b68b679f754d4d337e5379": {
+    "describe": {
+      "columns": [
+        {
+          "name": "existed!",
+          "ordinal": 0,
+          "type_info": "Bool"
+        },
+        {
+          "name": "deleted!",
+          "ordinal": 1,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        null,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            -- The main query cannot observe side-effects of data-modifying CTEs and \n            -- by design, always sees the \"before\" picture of the database,\n            -- so this lets us fold our permissions check together with the actual delete.\n            --\n            -- This was the \"being too clever\" I was talking about before. However, I think it's\n            -- permissible here as we're not pairing this together with a huge select, so it\n            -- should be relatively easy to understand the intended effect here.\n            with deleted_article as (\n                delete from article \n                -- Important: we only delete the article if the user actually authored it.\n                where slug = $1 and user_id = $2\n                -- We just need to return *something* for `exists()` below.\n                returning 1\n            )\n            select\n                -- This will be `true` if the article existed before we deleted it.\n                exists(select 1 from article where slug = $1) \"existed!\",\n                -- This will only be `true` if we actually deleted the article.\n                exists(select 1 from deleted_article) \"deleted!\"\n        "
+  },
+  "c0c6e9338a115212a1211de67e8c76f3ef5b7adf0213b1d27e1df87ccc9e88a2": {
+    "describe": {
+      "columns": [
+        {
+          "name": "user_id",
+          "ordinal": 0,
+          "type_info": "Uuid"
+        },
+        {
+          "name": "username",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "bio",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "image",
+          "ordinal": 3,
+          "type_info": "Text"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        true
+      ],
+      "parameters": {
+        "Left": [
+          "Text"
+        ]
+      }
+    },
+    "query": "select user_id, username, bio, image from \"user\" where username = $1"
+  },
+  "cff56a533710f95c757fbd0d68e3f94b11482611b9c7182f664ce11d98a56328": {
+    "describe": {
+      "columns": [
+        {
+          "name": "slug",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "body",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "tag_list",
+          "ordinal": 4,
+          "type_info": "TextArray"
+        },
+        {
+          "name": "created_at: Timestamptz",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "updated_at: Timestamptz",
+          "ordinal": 6,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "favorited!",
+          "ordinal": 7,
+          "type_info": "Bool"
+        },
+        {
+          "name": "favorites_count!",
+          "ordinal": 8,
+          "type_info": "Int8"
+        },
+        {
+          "name": "author_username",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_bio",
+          "ordinal": 10,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_image",
+          "ordinal": 11,
+          "type_info": "Text"
+        },
+        {
+          "name": "following_author!",
+          "ordinal": 12,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        null,
+        null,
+        false,
+        false,
+        true,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "Uuid",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "\n            with updated_article as (\n                update article\n                set\n                    slug = coalesce($1, slug),\n                    title = coalesce($2, title),\n                    description = coalesce($3, description),\n                    body = coalesce($4, body)\n                where article_id = $5\n                returning\n                    slug,\n                    title,\n                    description,\n                    body,\n                    tag_list,\n                    article.created_at \"created_at: Timestamptz\",\n                    article.updated_at \"updated_at: Timestamptz\"\n            )\n            select\n                updated_article.*,\n                exists(select 1 from article_favorite where user_id = $6) \"favorited!\",\n                coalesce(\n                    (select count(*) from article_favorite fav where fav.article_id = $5),\n                    0\n                ) \"favorites_count!\",\n                author.username author_username,\n                author.bio author_bio,\n                author.image author_image,\n                -- user not allowed to follow themselves\n                false \"following_author!\"\n            from updated_article\n            -- we've ensured the current user is the article's author so we can assume it here\n            inner join \"user\" author on author.user_id = $6\n        "
+  },
+  "f2e5d22d3ca56717ed145826033f87054a431c72a44ea6ad5c04e747d0cf25e8": {
+    "describe": {
+      "columns": [
+        {
+          "name": "slug",
+          "ordinal": 0,
+          "type_info": "Text"
+        },
+        {
+          "name": "title",
+          "ordinal": 1,
+          "type_info": "Text"
+        },
+        {
+          "name": "description",
+          "ordinal": 2,
+          "type_info": "Text"
+        },
+        {
+          "name": "body",
+          "ordinal": 3,
+          "type_info": "Text"
+        },
+        {
+          "name": "tag_list",
+          "ordinal": 4,
+          "type_info": "TextArray"
+        },
+        {
+          "name": "created_at: Timestamptz",
+          "ordinal": 5,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "updated_at: Timestamptz",
+          "ordinal": 6,
+          "type_info": "Timestamptz"
+        },
+        {
+          "name": "favorited!",
+          "ordinal": 7,
+          "type_info": "Bool"
+        },
+        {
+          "name": "favorites_count!",
+          "ordinal": 8,
+          "type_info": "Int8"
+        },
+        {
+          "name": "author_username",
+          "ordinal": 9,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_bio",
+          "ordinal": 10,
+          "type_info": "Text"
+        },
+        {
+          "name": "author_image",
+          "ordinal": 11,
+          "type_info": "Text"
+        },
+        {
+          "name": "following_author!",
+          "ordinal": 12,
+          "type_info": "Bool"
+        }
+      ],
+      "nullable": [
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        null,
+        null,
+        false,
+        false,
+        true,
+        null
+      ],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Text",
+          "Text",
+          "Text",
+          "Text",
+          "TextArray"
+        ]
+      }
+    },
+    "query": "\n            with inserted_article as (\n                insert into article (user_id, slug, title, description, body, tag_list)\n                values ($1, $2, $3, $4, $5, $6)\n                returning \n                    slug, \n                    title, \n                    description, \n                    body, \n                    tag_list, \n                    -- This is how you can override the inferred type of a column.\n                    created_at \"created_at: Timestamptz\", \n                    updated_at \"updated_at: Timestamptz\"\n            )\n            select \n                inserted_article.*,\n                false \"favorited!\",\n                0::int8 \"favorites_count!\",\n                username author_username,\n                bio author_bio,\n                image author_image,\n                -- user is forbidden to follow themselves\n                false \"following_author!\"\n            from inserted_article\n            inner join \"user\" on user_id = $1\n        "
+  },
+  "fd0c9fc79cd22fa130c88865bb712c9f599391c1d179ea53732681200fa0533a": {
+    "describe": {
+      "columns": [],
+      "nullable": [],
+      "parameters": {
+        "Left": [
+          "Uuid",
+          "Uuid"
+        ]
+      }
+    },
+    "query": "delete from follow where following_user_id = $1 and followed_user_id = $2"
+  }
+}

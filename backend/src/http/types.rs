@@ -1,7 +1,7 @@
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt::Formatter;
-use time::{Format, OffsetDateTime};
+use sqlx::types::time::{OffsetDateTime};
 
 /// `OffsetDateTime` provides RFC-3339 (ISO-8601 subset) serialization, but the default
 /// `serde::Serialize` implementation produces array of integers, which is great for binary
@@ -26,7 +26,7 @@ impl Serialize for Timestamptz {
     where
         S: Serializer,
     {
-        serializer.collect_str(&self.0.lazy_format(Format::Rfc3339))
+        time::serde::rfc3339::serialize(&self.0, serializer)
     }
 }
 
@@ -60,7 +60,7 @@ impl<'de> Deserialize<'de> for Timestamptz {
             where
                 E: serde::de::Error,
             {
-                OffsetDateTime::parse(v, Format::Rfc3339)
+                OffsetDateTime::parse(v, &time::format_description::well_known::Rfc3339)
                     .map(Timestamptz)
                     .map_err(E::custom)
             }
