@@ -1,6 +1,6 @@
 use crate::config::Config;
 use anyhow::Context;
-use axum::{AddExtensionLayer, Router};
+use axum::{routing::get, AddExtensionLayer, Router};
 use sqlx::PgPool;
 use std::sync::Arc;
 use tower::ServiceBuilder;
@@ -92,9 +92,15 @@ pub async fn serve(config: Config, db: PgPool) -> anyhow::Result<()> {
         .context("error running HTTP server")
 }
 
+async fn health() -> &'static str {
+    "OK"
+}
+
 fn api_router() -> Router {
     // This is the order that the modules were authored in.
-    users::router()
+    Router::new()
+        .route("/health", get(health))
+        .merge(users::router())
         .merge(profiles::router())
         .merge(articles::router())
 }
