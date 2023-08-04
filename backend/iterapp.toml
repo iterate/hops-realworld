@@ -2,6 +2,6 @@ port = 8080
 readiness_path = "/health"
 
 [env.common]
-HMAC_KEY = { encrypted = "zfGR2sDOUokXT2QKbBR6t4c8fKLIRaKvKcWm-NqvWm1gyoZOhwFbXNS3JiYNXouXRG1OqSclC1i7xJ80-o2xNIAHWz7knarjjsz_gc2sVfVUXadoiMyXV7vgoUBahfEhtt6JlAEPBzur4k2-r7mb7mehhY5ZHc0geosqDygvagIEkfPPJA_hOJLkqiek8HvXLxpTFwvmBb3suK3JtHZ9aS8iG4heSIc" }
+HMAC_KEY = "/fJJgIkPorViFyq1I345XVP/lFgl1jGvLzm2VGJIkIWb/3vYq+6PznOMCXeOOedw"
 
 [postgres]
