@@ -5,3 +5,6 @@ readiness_path = "/health"
 HMAC_KEY = "/fJJgIkPorViFyq1I345XVP/lFgl1jGvLzm2VGJIkIWb/3vYq+6PznOMCXeOOedw"
 
 [postgres]
+
+[experimental]
+cloud_sql_proxy_v2 = true
